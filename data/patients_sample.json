@@ -1,0 +1,52 @@
+[
+  {
+    "nom": "Diop",
+    "prenom": "Aminata",
+    "date_naissance": "1994-06-25",
+    "sexe": "F",
+    "adresse": "Dakar, Plateau",
+    "telephone": "+221771234567",
+    "email": "aminata.diop@example.com",
+    "antecedents": ["Allergie aux fruits de mer"]
+  },
+  {
+    "nom": "Kouame",
+    "prenom": "Aya",
+    "date_naissance": "1990-11-12",
+    "sexe": "F",
+    "adresse": "Abidjan, Cocody",
+    "telephone": "+2250708091011",
+    "email": "aya.kouame@example.com",
+    "antecedents": ["Asthme léger"]
+  },
+  {
+    "nom": "Traore",
+    "prenom": "Ousmane",
+    "date_naissance": "1985-03-20",
+    "sexe": "M",
+    "adresse": "Bamako, Commune IV",
+    "telephone": "+22366112233",
+    "email": "ousmane.traore@example.com",
+    "antecedents": ["Hypertension artérielle", "Diabète Type 2"]
+  },
+  {
+    "nom": "Diallo",
+    "prenom": "Mamadou",
+    "date_naissance": "1992-09-08",
+    "sexe": "M",
+    "adresse": "Conakry, Ratoma",
+    "telephone": "+224622001122",
+    "email": "mamadou.diallo@example.com",
+    "antecedents": []
+  },
+  {
+    "nom": "Nguema",
+    "prenom": "Christian",
+    "date_naissance": "1988-04-17",
+    "sexe": "M",
+    "adresse": "Libreville, Batterie 4",
+    "telephone": "+24106543210",
+    "email": "christian.nguema@example.com",
+    "antecedents": ["Ulcère gastrique"]
+  }
+]

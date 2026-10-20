@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: clinique-espoir-accueil
+    runtime: python
+    buildCommand: "pip install -r requirements.txt && python -m grpc_tools.protoc -I ./proto --python_out=./grpc_services/generated --grpc_python_out=./grpc_services/generated ./proto/accueil.proto"
+    startCommand: "python start_services.py"
+    envVars:
+      - key: PORT
+        value: 8081
+      - key: GRPC_PORT
+        value: 50051

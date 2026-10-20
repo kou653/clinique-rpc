@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinique Espoir — Service Accueil</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Palette Dégradé Médical Clinique */
+            --gradient-clinic: linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #0f172a 100%);
+            --gradient-hero: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 50%, #ffffff 100%);
+            --gradient-card: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            --gradient-accent: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+            
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --text-heading: #0f172a;
+            --text-body: #334155;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+            --card-shadow: 0 15px 35px -5px rgba(2, 132, 199, 0.12), 0 8px 16px -6px rgba(15, 23, 42, 0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: var(--text-body);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* ------------------ NAVIGATION PREMIUM ------------------ */
+        header {
+            width: 100%;
+            padding: 18px 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #0284c7, #0f172a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--gradient-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+            -webkit-text-fill-color: initial;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-link {
+            background: transparent;
+            border: none;
+            color: var(--text-body);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+            background: #f0f9ff;
+        }
+
+        .nav-link.active {
+            background: #e0f2fe;
+            color: var(--primary-dark);
+        }
+
+        .btn-register-nav {
+            background: var(--gradient-accent);
+            color: #ffffff !important;
+            border-radius: 8px;
+            padding: 10px 22px;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
+        }
+
+        .btn-register-nav:hover {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.35);
+        }
+
+        /* ------------------ VUES ------------------ */
+        .page-view {
+            display: none;
+            flex: 1;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .page-view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ------------------ HERO AVEC DÉGRADÉ CLINIQUE ------------------ */
+        .hero-banner {
+            background: var(--gradient-hero);
+            position: relative;
+            padding: 60px 0 80px;
+            border-bottom: 1px solid #e0f2fe;
+            overflow: hidden;
+        }
+
+        /* Cercles en dégradé de fond médical */
+        .hero-banner::before {
+            content: "";
+            position: absolute;
+            top: -120px;
+            right: -60px;
+            width: 480px;
+            height: 480px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(2, 132, 199, 0.03) 70%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .hero-banner::after {
+            content: "";
+            position: absolute;
+            bottom: -100px;
+            left: -80px;
+            width: 420px;
+            height: 420px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-container {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            align-items: center;
+            gap: 60px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: #ffffff;
+            border: 1px solid #bae6fd;
+            color: #0369a1;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 18px;
+            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.08);
+        }
+
+        .hero-title {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: var(--text-heading);
+            line-height: 1.2;
+            margin-bottom: 18px;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-title span {
+            background: linear-gradient(135deg, #0284c7, #0284c7 40%, #0f172a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: #475569;
+            font-weight: 500;
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        /* Widget de recherche */
+        .search-card {
+            background: #ffffff;
+            border: 1px solid #e0f2fe;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .input-hero {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s;
+            color: var(--text-heading);
+            background: #f8fafc;
+        }
+
+        .input-hero:focus {
+            background: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.12);
+        }
+
+        .hero-row-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn-hero {
+            background: var(--gradient-clinic);
+            color: #ffffff;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(2, 132, 199, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .btn-hero:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(2, 132, 199, 0.4);
+        }
+
+        .btn-hero-secondary {
+            background: #ffffff;
+            color: #0369a1;
+            border: 1.5px solid #bae6fd;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-hero-secondary:hover {
+            background: #f0f9ff;
+            border-color: #0284c7;
+        }
+
+        .hero-illustration {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            filter: drop-shadow(0 15px 25px rgba(2, 132, 199, 0.15));
+        }
+
+        /* ------------------ FORMULAIRES DE SAISIE ÉPURÉS ------------------ */
+        .form-section-container {
+            max-width: 680px;
+            margin: 50px auto 80px;
+            padding: 0 24px;
+        }
+
+        .service-card {
+            background: var(--gradient-card);
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 36px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+        }
+
+        .service-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: var(--gradient-accent);
+            border-radius: 18px 18px 0 0;
+        }
+
+        .service-card-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-heading);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full {
+            grid-column: span 2;
+        }
+
+        label {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-heading);
+        }
+
+        input, select, textarea {
+            padding: 12px 14px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.92rem;
+            outline: none;
+            transition: all 0.2s;
+            background: #ffffff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn-submit {
+            background: var(--gradient-clinic);
+            color: #ffffff;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin-top: 10px;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.35);
+        }
+
+        .patient-picker-bar {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .patient-picker-bar span {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #0369a1;
+            white-space: nowrap;
+        }
+
+        /* ------------------ TOAST NOTIFICATIONS ------------------ */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-size: 0.92rem;
+            font-weight: 600;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+            transform: translateY(120px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1000;
+            max-width: 420px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success { background: linear-gradient(135deg, #10b981, #059669); }
+        .toast-info { background: var(--gradient-clinic); }
+        .toast-error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+
+        @media (max-width: 900px) {
+            header { padding: 16px 20px; }
+            .hero-container { grid-template-columns: 1fr; gap: 30px; }
+            .hero-title { font-size: 2.2rem; }
+            .nav-menu { flex-wrap: wrap; }
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group.full { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ------------------ HEADER CLINIQUE ESPOIR ------------------ -->
+    <header>
+        <div class="logo" onclick="navigateTo('view-home')">
+            <div class="logo-icon">➕</div>
+            Clinique Espoir
+        </div>
+        <nav class="nav-menu">
+            <button class="nav-link active" id="btn-nav-home" onclick="navigateTo('view-home')">
+                Accueil
+            </button>
+            <button class="nav-link" id="btn-nav-consultation" onclick="navigateTo('view-consultation')">
+                Consultation
+            </button>
+            <button class="nav-link" id="btn-nav-laboratoire" onclick="navigateTo('view-laboratoire')">
+                Laboratoire
+            </button>
+            <button class="nav-link" id="btn-nav-radiologie" onclick="navigateTo('view-radiologie')">
+                Radiologie
+            </button>
+            <button class="nav-link btn-register-nav" id="btn-nav-inscription" onclick="navigateTo('view-inscription')">
+                Inscription Patient
+            </button>
+        </nav>
+    </header>
+
+    <!-- ============================================================== -->
+    <!-- PAGE PRINCIPALE AVEC DÉGRADÉ MÉDICAL                           -->
+    <!-- ============================================================== -->
+    <main id="view-home" class="page-view active">
+        <section class="hero-banner">
+            <div class="hero-container">
+                
+                <div class="hero-content">
+                    <div class="hero-tag">
+                        <span>🏥</span> Système Central d'Accueil
+                    </div>
+                    <h1 class="hero-title">
+                        Prenez vos rendez-vous <span>médicaux en ligne</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Rendez-vous physique ou téléconsultation vidéo avec nos praticiens.
+                    </p>
+
+                    <div class="search-card">
+                        <input type="text" class="input-hero" placeholder="Professionnel, spécialité ou établissement de santé" value="Dr. Koné — Médecine Générale">
+                        
+                        <div class="hero-row-inputs">
+                            <select id="quick-service-type" class="input-hero">
+                                <option value="view-consultation">Consultation Médicale</option>
+                                <option value="view-laboratoire">Analyses Laboratoire</option>
+                                <option value="view-radiologie">Examens Radiologie</option>
+                                <option value="view-inscription">Nouveau Patient</option>
+                            </select>
+                            <input type="text" class="input-hero" placeholder="Établissement" value="Clinique Espoir">
+                        </div>
+                    </div>
+
+                    <div class="hero-actions">
+                        <button class="btn-hero" onclick="handleQuickBooking()">
+                            Sur rendez-vous
+                        </button>
+                        <button class="btn-hero-secondary" onclick="navigateTo('view-inscription')">
+                            Nouveau Patient
+                        </button>
+                    </div>
+                </div>
+
+                <div class="hero-illustration">
+                    <svg viewBox="0 0 520 420" width="100%" height="auto" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Dégradé interne SVG -->
+                        <defs>
+                            <linearGradient id="clinicGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#38bdf8" />
+                                <stop offset="100%" stop-color="#0284c7" />
+                            </linearGradient>
+                            <linearGradient id="screenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#e0f2fe" />
+                                <stop offset="100%" stop-color="#bae6fd" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Bulle de fond dégradée -->
+                        <path d="M430 220C430 315 335 390 230 390C125 390 65 310 65 210C65 110 155 50 260 50C365 50 430 125 430 220Z" fill="url(#screenGrad)" opacity="0.45"/>
+                        
+                        <!-- Écran téléconsultation -->
+                        <rect x="250" y="110" width="190" height="130" rx="14" fill="#ffffff" stroke="#0284c7" stroke-width="2.5"/>
+                        <rect x="256" y="116" width="178" height="118" rx="10" fill="#f0f9ff"/>
+                        <circle cx="345" cy="165" r="32" fill="url(#clinicGrad)"/>
+                        <circle cx="345" cy="158" r="16" fill="#fde68a"/>
+                        <path d="M322 190C322 178 332 168 345 168C358 168 368 178 368 190V194H322V190Z" fill="#ffffff"/>
+                        <rect x="265" y="125" width="46" height="24" rx="6" fill="#ffffff" stroke="#bae6fd"/>
+                        <circle cx="277" cy="137" r="2.5" fill="#0284c7"/>
+                        <circle cx="288" cy="137" r="2.5" fill="#0284c7"/>
+                        <circle cx="299" cy="137" r="2.5" fill="#0284c7"/>
+
+                        <!-- Bureau clinique -->
+                        <rect x="120" y="270" width="280" height="12" rx="4" fill="url(#clinicGrad)"/>
+                        <rect x="140" y="282" width="10" height="90" fill="#0369a1"/>
+                        <rect x="370" y="282" width="10" height="90" fill="#0369a1"/>
+
+                        <!-- Ordinateur -->
+                        <path d="M260 230L275 270H230L245 230H260Z" fill="#64748b"/>
+                        <rect x="235" y="235" width="40" height="30" rx="3" fill="#ffffff" stroke="#cbd5e1"/>
+
+                        <!-- Chaise & Patient -->
+                        <rect x="160" y="280" width="45" height="8" rx="2" fill="#0284c7"/>
+                        <rect x="165" y="288" width="6" height="84" fill="#0369a1"/>
+                        <rect x="195" y="288" width="6" height="84" fill="#0369a1"/>
+                        <path d="M190 280V330H220V365" stroke="#0284c7" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="165" y="200" width="36" height="75" rx="14" fill="#fb7185"/>
+                        <path d="M185 220L225 250L240 245" stroke="#fb7185" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="182" cy="170" r="16" fill="#7c2d12"/>
+                        <path d="M170 170C170 158 180 152 192 152C198 152 202 156 202 162C198 162 195 168 195 174C195 178 190 182 182 182C175 182 170 176 170 170Z" fill="#0f172a"/>
+                    </svg>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- FORMULAIRE INSCRIPTION DU PATIENT                              -->
+    <!-- ============================================================== -->
+    <div id="view-inscription" class="page-view">
+        <div class="form-section-container">
+            <div class="service-card">
+                <h2 class="service-card-title">📝 Inscription du Patient</h2>
+
+                <form onsubmit="handleRegisterPatient(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nom *</label>
+                            <input type="text" id="reg-nom" required placeholder="Dupont">
+                        </div>
+                        <div class="form-group">
+                            <label>Prénom *</label>
+                            <input type="text" id="reg-prenom" required placeholder="Jean">
+                        </div>
+                        <div class="form-group">
+                            <label>Date de Naissance *</label>
+                            <input type="date" id="reg-dob" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Sexe *</label>
+                            <select id="reg-sexe" required>
+                                <option value="M">Masculin (M)</option>
+                                <option value="F">Féminin (F)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Téléphone</label>
+                            <input type="tel" id="reg-tel" placeholder="+33 6 12 34 56 78">
+                        </div>
+                        <div class="form-group">
+                            <label>Adresse</label>
+                            <input type="text" id="reg-adresse" placeholder="12 Rue de la Paix, Paris">
+                        </div>
+                        <div class="form-group full">
+                            <label>Antécédents de base</label>
+                            <input type="text" id="reg-antecedents" placeholder="Asthme, Diabète, Allergie aspirine">
+                        </div>
+                        <div class="form-group full">
+                            <button type="submit" class="btn-submit">
+                                Enregistrer le Patient
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- FORMULAIRE RDV CONSULTATION                                    -->
+    <!-- ============================================================== -->
+    <div id="view-consultation" class="page-view">
+        <div class="form-section-container">
+            <div class="service-card">
+                <h2 class="service-card-title">👨‍⚕️ Prise de RDV Consultation</h2>
+
+                <div class="patient-picker-bar">
+                    <span>Patient :</span>
+                    <select id="select-patient-c" onchange="applyPatient('select-patient-c', 'rdv-id-dossier')" style="width: 100%; padding: 8px;">
+                        <option value="">-- Sélectionner un patient existant --</option>
+                    </select>
+                </div>
+
+                <form onsubmit="handleBookConsultation(event)">
+                    <div class="form-grid">
+                        <div class="form-group full">
+                            <label>idDossier *</label>
+                            <input type="text" id="rdv-id-dossier" required placeholder="DOS-...">
+                        </div>
+                        <div class="form-group">
+                            <label>ID Médecin *</label>
+                            <input type="text" id="rdv-medecin" required value="MED-DR-KONE">
+                        </div>
+                        <div class="form-group">
+                            <label>Date et Heure *</label>
+                            <input type="datetime-local" id="rdv-date" required>
+                        </div>
+                        <div class="form-group full">
+                            <label>Motif de la Consultation *</label>
+                            <input type="text" id="rdv-motif" required placeholder="Consultation générale">
+                        </div>
+                        <div class="form-group full">
+                            <label>Priorité</label>
+                            <select id="rdv-priorite">
+                                <option value="NORMAL">NORMAL</option>
+                                <option value="URGENT">URGENT</option>
+                            </select>
+                        </div>
+                        <div class="form-group full">
+                            <button type="submit" class="btn-submit">
+                                Valider la Consultation
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- FORMULAIRE RDV LABORATOIRE                                     -->
+    <!-- ============================================================== -->
+    <div id="view-laboratoire" class="page-view">
+        <div class="form-section-container">
+            <div class="service-card">
+                <h2 class="service-card-title">🧪 Prise de RDV Laboratoire</h2>
+
+                <div class="patient-picker-bar">
+                    <span>Patient :</span>
+                    <select id="select-patient-l" onchange="applyPatient('select-patient-l', 'lab-id-dossier')" style="width: 100%; padding: 8px;">
+                        <option value="">-- Sélectionner un patient existant --</option>
+                    </select>
+                </div>
+
+                <form onsubmit="handleBookLab(event)">
+                    <div class="form-grid">
+                        <div class="form-group full">
+                            <label>idDossier *</label>
+                            <input type="text" id="lab-id-dossier" required placeholder="DOS-...">
+                        </div>
+                        <div class="form-group">
+                            <label>Médecin Prescripteur ID *</label>
+                            <input type="text" id="lab-medecin" required value="MED-DR-KONE">
+                        </div>
+                        <div class="form-group">
+                            <label>Référence Ordonnance</label>
+                            <input type="text" id="lab-ordonnance" placeholder="ORD-2026-001">
+                        </div>
+                        <div class="form-group full">
+                            <label>Analyses Prescrites *</label>
+                            <input type="text" id="lab-analyses" required placeholder="NFS, Glycémie, Bilan lipidique">
+                        </div>
+                        <div class="form-group full">
+                            <label>Priorité</label>
+                            <select id="lab-priorite">
+                                <option value="NORMAL">NORMAL</option>
+                                <option value="URGENT">URGENT</option>
+                            </select>
+                        </div>
+                        <div class="form-group full">
+                            <button type="submit" class="btn-submit">
+                                Envoyer la demande au Laboratoire
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- FORMULAIRE RDV RADIOLOGIE                                      -->
+    <!-- ============================================================== -->
+    <div id="view-radiologie" class="page-view">
+        <div class="form-section-container">
+            <div class="service-card">
+                <h2 class="service-card-title">🩻 Prise de RDV Radiologie</h2>
+
+                <div class="patient-picker-bar">
+                    <span>Patient :</span>
+                    <select id="select-patient-r" onchange="applyPatient('select-patient-r', 'rad-id-dossier')" style="width: 100%; padding: 8px;">
+                        <option value="">-- Sélectionner un patient existant --</option>
+                    </select>
+                </div>
+
+                <form onsubmit="handleBookRadio(event)">
+                    <div class="form-grid">
+                        <div class="form-group full">
+                            <label>idDossier *</label>
+                            <input type="text" id="rad-id-dossier" required placeholder="DOS-...">
+                        </div>
+                        <div class="form-group">
+                            <label>Médecin Prescripteur ID *</label>
+                            <input type="text" id="rad-medecin" required value="MED-DR-KONE">
+                        </div>
+                        <div class="form-group">
+                            <label>Priorité</label>
+                            <select id="rad-priorite">
+                                <option value="NORMAL">NORMAL</option>
+                                <option value="URGENT">URGENT</option>
+                            </select>
+                        </div>
+                        <div class="form-group full">
+                            <label>Types de Radio *</label>
+                            <input type="text" id="rad-types" required placeholder="Radiographie Thorax, Échographie">
+                        </div>
+                        <div class="form-group full">
+                            <label>Notes complémentaires</label>
+                            <input type="text" id="rad-notes" placeholder="Face et profil">
+                        </div>
+                        <div class="form-group full">
+                            <button type="submit" class="btn-submit">
+                                Envoyer la demande à la Radiologie
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const API_URL = "http://localhost:8081";
+        let patientsCache = [];
+
+        document.getElementById("rdv-date").value = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
+
+        function navigateTo(viewId) {
+            document.querySelectorAll(".page-view").forEach(v => v.classList.remove("active"));
+            document.querySelectorAll(".nav-link").forEach(b => b.classList.remove("active"));
+
+            const targetView = document.getElementById(viewId);
+            if (targetView) targetView.classList.add("active");
+
+            if (viewId === 'view-home') document.getElementById('btn-nav-home').classList.add('active');
+            if (viewId === 'view-consultation') document.getElementById('btn-nav-consultation').classList.add('active');
+            if (viewId === 'view-laboratoire') document.getElementById('btn-nav-laboratoire').classList.add('active');
+            if (viewId === 'view-radiologie') document.getElementById('btn-nav-radiologie').classList.add('active');
+            if (viewId === 'view-inscription') document.getElementById('btn-nav-inscription').classList.add('active');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function handleQuickBooking() {
+            const target = document.getElementById("quick-service-type").value;
+            navigateTo(target);
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = `toast toast-${type} show`;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3500);
+        }
+
+        async function fetchPatients() {
+            try {
+                const res = await fetch(`${API_URL}/v1/accueil/patients`);
+                if (!res.ok) return;
+                patientsCache = await res.json();
+
+                const populate = (id) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.innerHTML = '<option value="">-- Sélectionner un patient existant --</option>' + 
+                        patientsCache.map(p => `<option value="${p.id_dossier}">${p.prenom} ${p.nom} (${p.id_dossier})</option>`).join('');
+                };
+
+                populate('select-patient-c');
+                populate('select-patient-l');
+                populate('select-patient-r');
+            } catch (err) {
+                console.log("Chargement...");
+            }
+        }
+
+        function applyPatient(selectId, inputId) {
+            const val = document.getElementById(selectId).value;
+            if (val) {
+                document.getElementById(inputId).value = val;
+                showToast(`idDossier : ${val}`, 'info');
+            }
+        }
+
+        async function handleRegisterPatient(e) {
+            e.preventDefault();
+            const antRaw = document.getElementById("reg-antecedents").value;
+            const payload = {
+                nom: document.getElementById("reg-nom").value,
+                prenom: document.getElementById("reg-prenom").value,
+                date_naissance: document.getElementById("reg-dob").value,
+                sexe: document.getElementById("reg-sexe").value,
+                telephone: document.getElementById("reg-tel").value,
+                adresse: document.getElementById("reg-adresse").value,
+                antecedents: antRaw ? antRaw.split(',').map(s => s.trim()).filter(Boolean) : []
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/v1/accueil/patients`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "Erreur inscription");
+
+                showToast(`Patient enregistré ! ID: ${data.id_dossier}`, 'success');
+                fetchPatients();
+
+                document.getElementById('rdv-id-dossier').value = data.id_dossier;
+                document.getElementById('lab-id-dossier').value = data.id_dossier;
+                document.getElementById('rad-id-dossier').value = data.id_dossier;
+
+                setTimeout(() => navigateTo('view-consultation'), 1000);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function handleBookConsultation(e) {
+            e.preventDefault();
+            const payload = {
+                id_dossier: document.getElementById("rdv-id-dossier").value,
+                medecin_id: document.getElementById("rdv-medecin").value,
+                date_rdv: document.getElementById("rdv-date").value,
+                motif: document.getElementById("rdv-motif").value,
+                priorite: document.getElementById("rdv-priorite").value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/v1/accueil/rdv/consultation`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "Erreur");
+                showToast(data.message, 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function handleBookLab(e) {
+            e.preventDefault();
+            const analysesRaw = document.getElementById("lab-analyses").value;
+            const payload = {
+                id_dossier: document.getElementById("lab-id-dossier").value,
+                medecin_prescripteur_id: document.getElementById("lab-medecin").value,
+                ordonnance_ref: document.getElementById("lab-ordonnance").value,
+                analyses_prescrites: analysesRaw.split(',').map(s => s.trim()).filter(Boolean),
+                priorite: document.getElementById("lab-priorite").value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/v1/accueil/rdv/laboratoire`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "Erreur");
+                showToast(data.message, 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function handleBookRadio(e) {
+            e.preventDefault();
+            const typesRaw = document.getElementById("rad-types").value;
+            const payload = {
+                id_dossier: document.getElementById("rad-id-dossier").value,
+                medecin_prescripteur_id: document.getElementById("rad-medecin").value,
+                types_radio: typesRaw.split(',').map(s => s.trim()).filter(Boolean),
+                priorite: document.getElementById("rad-priorite").value,
+                notes: document.getElementById("rad-notes").value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/v1/accueil/rdv/radiologie`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "Erreur");
+                showToast(data.message, 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        fetchPatients();
+    </script>
+</body>
+</html>

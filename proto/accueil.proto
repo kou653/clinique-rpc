@@ -1,0 +1,114 @@
+syntax = "proto3";
+package accueil;
+
+// =============================================================================
+// Service Accueil - Contrats Protocol Buffers
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// 1.1 Inscription du Patient (Service Interne Accueil)
+// "Génère ou attribue un idDossier unique et stocke l'état civil ainsi que les antécédents de base."
+// -----------------------------------------------------------------------------
+message RegisterPatientRequest {
+  string nom = 1;
+  string prenom = 2;
+  string date_naissance = 3;   // YYYY-MM-DD
+  string sexe = 4;              // M / F
+  string adresse = 5;
+  string telephone = 6;
+  repeated string antecedents = 7;
+}
+
+message PatientResponse {
+  string id_dossier = 1;
+  string nom = 2;
+  string prenom = 3;
+  string date_naissance = 4;
+  string sexe = 5;
+  string adresse = 6;
+  string telephone = 7;
+  repeated string antecedents = 8;
+  string statut = 9;           // "ENREGISTRE" | "ERREUR"
+  string message = 10;
+}
+
+message GetPatientRequest {
+  string id_dossier = 1;
+}
+
+// -----------------------------------------------------------------------------
+// 1.2 Prise de RDV Consultation (Service Distant Consultation)
+// Flux RPC : ConsultationService.NotifyAppointment(AppointmentRequest) returns (AppointmentResponse)
+// -----------------------------------------------------------------------------
+message AppointmentRequest {
+  string id_dossier = 1;
+  string medecin_id = 2;
+  string date_rdv = 3;
+  string motif = 4;
+  string priorite = 5;          // "NORMAL" | "URGENT"
+}
+
+message AppointmentResponse {
+  string id_rdv = 1;
+  string id_dossier = 2;
+  string medecin_id = 3;
+  string date_rdv = 4;
+  string statut = 5;            // "CONFIRME" | "EN_ATTENTE" | "ERREUR"
+  string message = 6;
+}
+
+// -----------------------------------------------------------------------------
+// 1.3 Prise de RDV Laboratoire (Service Distant Laboratoire)
+// Flux RPC : LaboService.CreateLabOrder(LabOrderRequest) returns (LabOrderResponse)
+// -----------------------------------------------------------------------------
+message LabOrderRequest {
+  string id_dossier = 1;
+  string medecin_prescripteur_id = 2;
+  repeated string analyses_prescrites = 3;
+  string priorite = 4;
+  string ordonnance_ref = 5;
+}
+
+message LabOrderResponse {
+  string id_ordre_labo = 1;
+  string id_dossier = 2;
+  string statut = 3;            // "TRANSMIS" | "EN_ATTENTE" | "ERREUR"
+  string message = 4;
+}
+
+// -----------------------------------------------------------------------------
+// 1.4 Prise de RDV Radiologie (Service Distant Radiologie)
+// Flux RPC : RadioService.CreateRadioOrder(RadioOrderRequest) returns (RadioOrderResponse)
+// -----------------------------------------------------------------------------
+message RadioOrderRequest {
+  string id_dossier = 1;
+  string medecin_prescripteur_id = 2;
+  repeated string types_radio = 3;
+  string priorite = 4;
+  string notes = 5;
+}
+
+message RadioOrderResponse {
+  string id_ordre_radio = 1;
+  string id_dossier = 2;
+  string statut = 3;            // "TRANSMIS" | "EN_ATTENTE" | "ERREUR"
+  string message = 4;
+}
+
+// =============================================================================
+// Service Accueil
+// =============================================================================
+service AccueilService {
+  // 1.1 Inscription du Patient
+  rpc RegisterPatient(RegisterPatientRequest) returns (PatientResponse);
+  rpc GetPatient(GetPatientRequest) returns (PatientResponse);
+
+  // 1.2 Prise de RDV Consultation
+  rpc BookConsultation(AppointmentRequest) returns (AppointmentResponse);
+
+  // 1.3 Prise de RDV Laboratoire
+  rpc BookLabOrder(LabOrderRequest) returns (LabOrderResponse);
+
+  // 1.4 Prise de RDV Radiologie
+  rpc BookRadioOrder(RadioOrderRequest) returns (RadioOrderResponse);
+}
