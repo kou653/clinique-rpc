@@ -25,20 +25,22 @@ logger = logging.getLogger("Launcher")
 
 try:
     import accueil_pb2_grpc
+    import clinique_pb2_grpc
 except ImportError:
-    from grpc_services.generated import accueil_pb2_grpc
+    from grpc_services.generated import accueil_pb2_grpc, clinique_pb2_grpc
 
-from grpc_services.accueil_servicer import AccueilServicer
+from grpc_services.accueil_servicer import AccueilServicer, CliniqueAccueilServicer
 from rest_services.gateway import app
 
-GRPC_PORT = 50051
-REST_PORT = 8081
+GRPC_PORT = int(os.getenv("GRPC_PORT", "50051"))
+REST_PORT = int(os.getenv("REST_PORT", "8081"))
 
 
 def run_grpc():
-    """Démarre le serveur gRPC sur le port 50051."""
+    """Démarre le serveur gRPC sur le port configuré."""
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     accueil_pb2_grpc.add_AccueilServiceServicer_to_server(AccueilServicer(), server)
+    clinique_pb2_grpc.add_AccueilServicer_to_server(CliniqueAccueilServicer(), server)
     server.add_insecure_port(f"0.0.0.0:{GRPC_PORT}")
     server.start()
     logger.info(f"Serveur gRPC démarré sur 0.0.0.0:{GRPC_PORT}")

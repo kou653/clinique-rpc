@@ -1,6 +1,9 @@
 """
 database.py — Gestion de la base de données SQLite pour le Service Accueil.
-Persistance des dossiers patients dans un fichier 'clinique.db'.
+Gère :
+  - Les informations administratives (état civil, antécédents)
+  - Les observations médicales envoyées par Consultation (RenseignerObservations)
+  - Les prescriptions médicales envoyées par Consultation (RenseignerPrescription)
 """
 
 import sqlite3
@@ -21,7 +24,7 @@ def get_connection() -> sqlite3.Connection:
 
 
 def init_db():
-    """Initialise la table des dossiers patients si elle n'existe pas."""
+    """Initialise la table des dossiers patients avec colonnes observations et prescriptions."""
     with get_connection() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS patients (
@@ -33,6 +36,8 @@ def init_db():
                 adresse TEXT,
                 telephone TEXT,
                 antecedents TEXT,
+                observations TEXT DEFAULT '[]',
+                prescriptions TEXT DEFAULT '[]',
                 date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -44,17 +49,14 @@ init_db()
 
 
 def save_patient(patient_dict: dict) -> str:
-    """
-    1.1 Inscription du Patient dans la base de données SQLite.
-    Génère un idDossier unique 'DOS-<uuid>'.
-    """
+    """1.1 Inscription du Patient dans la base SQLite."""
     id_dossier = f"DOS-{uuid.uuid4().hex[:8].upper()}"
     antecedents_json = json.dumps(patient_dict.get("antecedents", []))
 
     with get_connection() as conn:
         conn.execute("""
-            INSERT INTO patients (id_dossier, nom, prenom, date_naissance, sexe, adresse, telephone, antecedents)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO patients (id_dossier, nom, prenom, date_naissance, sexe, adresse, telephone, antecedents, observations, prescriptions)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]')
         """, (
             id_dossier,
             patient_dict.get("nom", "").strip(),
@@ -71,7 +73,7 @@ def save_patient(patient_dict: dict) -> str:
 
 
 def get_patient(id_dossier: str) -> Optional[Dict]:
-    """Récupère un patient par son identifiant de dossier unique."""
+    """Récupère un patient complet par son id_dossier."""
     with get_connection() as conn:
         cursor = conn.execute("SELECT * FROM patients WHERE id_dossier = ?", (id_dossier,))
         row = cursor.fetchone()
@@ -79,31 +81,59 @@ def get_patient(id_dossier: str) -> Optional[Dict]:
             return None
 
         data = dict(row)
-        try:
-            data["antecedents"] = json.loads(data.get("antecedents") or "[]")
-        except Exception:
-            data["antecedents"] = []
+        for key in ["antecedents", "observations", "prescriptions"]:
+            try:
+                data[key] = json.loads(data.get(key) or "[]")
+            except Exception:
+                data[key] = []
         return data
 
 
+def add_observations(id_dossier: str, new_observations: List[str]) -> bool:
+    """Ajoute des observations médicales au dossier du patient."""
+    p = get_patient(id_dossier)
+    if not p:
+        return False
+    current = list(p.get("observations", []))
+    current.extend(new_observations)
+    with get_connection() as conn:
+        conn.execute("UPDATE patients SET observations = ? WHERE id_dossier = ?", (json.dumps(current), id_dossier))
+        conn.commit()
+    return True
+
+
+def add_prescriptions(id_dossier: str, new_prescriptions: List[str]) -> bool:
+    """Ajoute des prescriptions médicales au dossier du patient."""
+    p = get_patient(id_dossier)
+    if not p:
+        return False
+    current = list(p.get("prescriptions", []))
+    current.extend(new_prescriptions)
+    with get_connection() as conn:
+        conn.execute("UPDATE patients SET prescriptions = ? WHERE id_dossier = ?", (json.dumps(current), id_dossier))
+        conn.commit()
+    return True
+
+
 def list_patients() -> List[Dict]:
-    """Retourne la liste complète des patients enregistrés, du plus récent au plus ancien."""
+    """Retourne la liste complète des patients."""
     with get_connection() as conn:
         cursor = conn.execute("SELECT * FROM patients ORDER BY date_creation DESC")
         rows = cursor.fetchall()
         result = []
         for row in rows:
             data = dict(row)
-            try:
-                data["antecedents"] = json.loads(data.get("antecedents") or "[]")
-            except Exception:
-                data["antecedents"] = []
+            for key in ["antecedents", "observations", "prescriptions"]:
+                try:
+                    data[key] = json.loads(data.get(key) or "[]")
+                except Exception:
+                    data[key] = []
             result.append(data)
         return result
 
 
 def clear_all():
-    """Vide la table des patients (utilisé principalement pour les tests)."""
+    """Vide la table des patients."""
     with get_connection() as conn:
         conn.execute("DELETE FROM patients")
         conn.commit()

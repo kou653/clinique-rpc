@@ -24,6 +24,7 @@ except ImportError:
     from grpc_services.generated import accueil_pb2, accueil_pb2_grpc
 
 from grpc_services import database
+from grpc_services.clients import laboratoire_client
 from rest_services.schemas import (
     RegisterPatientRequest,
     PatientResponseModel,
@@ -33,6 +34,7 @@ from rest_services.schemas import (
     LabRdvResponse,
     RadioRdvRequest,
     RadioRdvResponse,
+    LabResultResponse,
 )
 
 app = FastAPI(
@@ -245,6 +247,26 @@ def book_laboratoire(payload: LabRdvRequest):
         id_dossier=grpc_response.id_dossier,
         statut=grpc_response.statut,
         message=grpc_response.message
+    )
+
+
+@app.get(
+    "/v1/accueil/labo/resultats/{patient_id}",
+    response_model=LabResultResponse,
+    tags=["1.3 RDV Laboratoire"]
+)
+def get_lab_result(patient_id: int):
+    """
+    Interroge le Service Laboratoire distant en gRPC via ObtenirResultat(RequeteResultat).
+    """
+    res = laboratoire_client.obtenir_resultat_labo(patient_id)
+    return LabResultResponse(
+        ok=res.get("ok", False),
+        patient_id=res.get("patient_id", patient_id),
+        analyse=res.get("analyse", ""),
+        valeur=res.get("valeur", ""),
+        statut=res.get("statut", ""),
+        message=res.get("message", "")
     )
 
 

@@ -88,3 +88,14 @@ class RadioRdvResponse(BaseModel):
     id_dossier: str
     statut: str
     message: str
+
+# -----------------------------------------------------------------------------
+# Consultation des Résultats du Laboratoire (gRPC ObtenirResultat)
+# -----------------------------------------------------------------------------
+class LabResultResponse(BaseModel):
+    ok: bool
+    patient_id: int
+    analyse: Optional[str] = ""
+    valeur: Optional[str] = ""
+    statut: Optional[str] = ""
+    message: str
