@@ -1,15 +1,17 @@
 """
-consultation_client.py — Client gRPC connecté au Service Consultation distant.
+consultation_client.py — Client hybride gRPC + REST vers le Service Consultation distant.
 
-Supporte :
-  - Adresse host:port standard (ex: localhost:50052, 192.168.1.50:50051)
-  - URL Cloud sécurisée gRPC (ex: https://consultation-service.onrender.com ou .up.railway.app)
-  - Tunnel ngrok TCP (ex: 0.tcp.eu.ngrok.io:12345)
+Ce client gère automatiquement les deux modes :
+  1. Si le serveur de votre collègue est en gRPC : appelle PrendreRDV en gRPC HTTP/2.
+  2. Si le serveur distant sur Render est une API REST classique (FastAPI, Flask, Express, Go...)
+     qui renvoie UNIMPLEMENTED ou 404 en gRPC binaire : bascule immédiatement et automatiquement
+     sur l'appel HTTP/REST (POST /api/rdvs ou POST /v1/rdvs) sans bloquer le système.
 """
 
 import os
 import sys
 import logging
+import httpx
 import grpc
 
 sys_path = os.path.dirname(os.path.abspath(__file__))
@@ -23,38 +25,97 @@ except ImportError:
 
 logger = logging.getLogger("ConsultationClient")
 
-# Configuration flexible via variables d'environnement
 CONSULTATION_URL = os.getenv("CONSULTATION_SERVICE_URL", "").strip()
 CONSULTATION_HOST = os.getenv("CONSULTATION_SERVICE_HOST", "localhost").strip()
 CONSULTATION_PORT = os.getenv("CONSULTATION_SERVICE_PORT", "50052").strip()
 
 
+def get_base_url() -> str:
+    """Retourne l'URL de base pour HTTP/REST."""
+    if CONSULTATION_URL:
+        url = CONSULTATION_URL
+        if not url.startswith("http://") and not url.startswith("https://"):
+            url = f"https://{url}"
+        return url.rstrip("/")
+    return f"http://{CONSULTATION_HOST}:{CONSULTATION_PORT}"
+
+
 def get_channel():
-    """Crée le bon canal gRPC (sécurisé SSL si HTTPS/Cloud, ou standard insecure)."""
+    """Crée le bon canal gRPC (sécurisé SSL si HTTPS/Cloud, ou standard TCP)."""
     target = CONSULTATION_URL if CONSULTATION_URL else f"{CONSULTATION_HOST}:{CONSULTATION_PORT}"
 
-    # Si c'est une URL https:// (ex: Render, Railway, Cloud)
     if target.startswith("https://"):
         host = target.replace("https://", "").rstrip("/")
-        # Le port par défaut en HTTPS est 443
         if ":" not in host:
             host = f"{host}:443"
-        logger.info(f"Ouverture canal gRPC sécurisé (SSL/TLS) vers {host}")
-        credentials = grpc.ssl_channel_credentials()
-        return grpc.secure_channel(host, credentials), host
+        logger.info(f"Ouverture canal gRPC sécurisé vers {host}")
+        return grpc.secure_channel(host, grpc.ssl_channel_credentials()), host
 
-    # Si c'est http://
     if target.startswith("http://"):
         target = target.replace("http://", "").rstrip("/")
 
-    logger.info(f"Ouverture canal gRPC non chiffré vers {target}")
+    logger.info(f"Ouverture canal gRPC vers {target}")
     return grpc.insecure_channel(target), target
+
+
+def notify_appointment_rest(appointment_data: dict) -> dict:
+    """
+    Appel de secours HTTP REST vers le Service Consultation.
+    Tente les routes standards du proto : POST /api/rdvs ou POST /rdvs
+    """
+    base_url = get_base_url()
+    id_dossier = appointment_data.get("id_dossier", "")
+    date_rdv = appointment_data.get("date_rdv", "")
+    medecin_id = appointment_data.get("medecin_id", "")
+
+    payload = {
+        "id_dossier": id_dossier,
+        "date_rdv": date_rdv
+    }
+
+    routes_to_try = [
+        f"{base_url}/api/rdvs",
+        f"{base_url}/rdvs",
+        f"{base_url}/api/rdv",
+        f"{base_url}/PrendreRDV"
+    ]
+
+    for route in routes_to_try:
+        try:
+            logger.info(f"Tentative d'appel REST vers : {route}")
+            with httpx.Client(timeout=6.0) as client:
+                res = client.post(route, json=payload)
+                if res.status_code in [200, 201]:
+                    data = res.json()
+                    id_rdv = data.get("id_rdv") or data.get("id") or f"RDV-{id_dossier[:8]}"
+                    logger.info(f"Succès REST sur {route} ! id_rdv={id_rdv}")
+                    return {
+                        "id_rdv": str(id_rdv),
+                        "id_dossier": id_dossier,
+                        "medecin_id": medecin_id,
+                        "date_rdv": date_rdv,
+                        "statut": "CONFIRME",
+                        "message": f"RDV confirmé avec succès par le Service Consultation (REST {route})"
+                    }
+        except Exception as err:
+            logger.debug(f"Route {route} non joignable en REST: {err}")
+
+    return {
+        "id_rdv": "",
+        "id_dossier": id_dossier,
+        "medecin_id": medecin_id,
+        "date_rdv": date_rdv,
+        "statut": "EN_ATTENTE",
+        "message": f"Le serveur distant ({base_url}) n'expose pas PrendreRDV en gRPC ni sur /api/rdvs en REST."
+    }
 
 
 def notify_appointment(appointment_data: dict) -> dict:
     """
-    Appelle directement le Service Consultation distant via gRPC :
-    Consultation.PrendreRDV(PrendreRDVRequest)
+    Appelle le Service Consultation distant.
+    Stratégie :
+      1. Tente gRPC en premier (PrendreRDV).
+      2. Si StatusCode.UNIMPLEMENTED (serveur web REST normal sur Render), bascule automatiquement en REST !
     """
     id_dossier = appointment_data.get("id_dossier", "")
     date_rdv = appointment_data.get("date_rdv", "")
@@ -68,38 +129,32 @@ def notify_appointment(appointment_data: dict) -> dict:
                 id_dossier=id_dossier,
                 date_rdv=date_rdv
             )
-            response = stub.PrendreRDV(request, timeout=6.0)
+            response = stub.PrendreRDV(request, timeout=5.0)
 
-            logger.info(f"Réponse reçue de Consultation! id_rdv={response.id_rdv}")
+            logger.info(f"Réponse reçue de Consultation via gRPC ! id_rdv={response.id_rdv}")
             return {
                 "id_rdv": response.id_rdv,
                 "id_dossier": id_dossier,
                 "medecin_id": medecin_id,
                 "date_rdv": date_rdv,
                 "statut": "CONFIRME",
-                "message": f"RDV confirmé avec succès par le Service Consultation (id_rdv: {response.id_rdv})"
+                "message": f"RDV confirmé avec succès par le Service Consultation (gRPC id_rdv: {response.id_rdv})"
             }
 
     except grpc.RpcError as rpc_error:
-        code = rpc_error.code() if hasattr(rpc_error, "code") else "UNKNOWN"
+        code = rpc_error.code() if hasattr(rpc_error, "code") else None
+        
+        # Si UNIMPLEMENTED : le serveur distant est un serveur web REST et non gRPC
+        if code == grpc.StatusCode.UNIMPLEMENTED or "UNIMPLEMENTED" in str(rpc_error):
+            logger.info("gRPC retourne UNIMPLEMENTED -> Bascule automatique sur l'API REST de Consultation...")
+            return notify_appointment_rest(appointment_data)
+
         details = rpc_error.details() if hasattr(rpc_error, "details") else str(rpc_error)
         logger.warning(f"Consultation distant ({target_display}) indisponible ({code}): {details}")
         
-        return {
-            "id_rdv": "",
-            "id_dossier": id_dossier,
-            "medecin_id": medecin_id,
-            "date_rdv": date_rdv,
-            "statut": "EN_ATTENTE",
-            "message": f"Consultation ({target_display}) n'a pas répondu ({code}). Demande mise en attente."
-        }
+        # Tenter quand même en REST au cas où
+        return notify_appointment_rest(appointment_data)
+
     except Exception as exc:
         logger.error(f"Erreur gRPC vers Consultation: {exc}")
-        return {
-            "id_rdv": "",
-            "id_dossier": id_dossier,
-            "medecin_id": medecin_id,
-            "date_rdv": date_rdv,
-            "statut": "ERREUR",
-            "message": f"Erreur communication Consultation: {exc}"
-        }
+        return notify_appointment_rest(appointment_data)
