@@ -24,7 +24,9 @@ def get_connection() -> sqlite3.Connection:
 
 
 def init_db():
-    """Initialise la table des dossiers patients avec colonnes observations et prescriptions."""
+    """Initialise la table des dossiers patients avec colonnes observations et prescriptions.
+    Pré-charge les données de démonstration (patients_sample.json) si la base est vide.
+    """
     with get_connection() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS patients (
@@ -42,6 +44,35 @@ def init_db():
             )
         """)
         conn.commit()
+
+        # Si la table est vide (ex: premier démarrage ou redémarrage de conteneur éphémère),
+        # charger les patients d'exemple de data/patients_sample.json
+        cursor = conn.execute("SELECT COUNT(*) FROM patients")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            sample_file = os.path.join(os.path.dirname(__file__), "..", "data", "patients_sample.json")
+            if os.path.exists(sample_file):
+                try:
+                    with open(sample_file, "r", encoding="utf-8") as f:
+                        samples = json.load(f)
+                    for item in samples:
+                        id_d = f"DOS-{uuid.uuid4().hex[:8].upper()}"
+                        conn.execute("""
+                            INSERT INTO patients (id_dossier, nom, prenom, date_naissance, sexe, adresse, telephone, antecedents, observations, prescriptions)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]')
+                        """, (
+                            id_d,
+                            item.get("nom", "").strip(),
+                            item.get("prenom", "").strip(),
+                            item.get("date_naissance", "").strip(),
+                            item.get("sexe", "").strip(),
+                            item.get("adresse", "").strip(),
+                            item.get("telephone", "").strip(),
+                            json.dumps(item.get("antecedents", []))
+                        ))
+                    conn.commit()
+                except Exception as e:
+                    pass
 
 
 # Initialisation au chargement du module
