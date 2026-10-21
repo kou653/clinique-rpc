@@ -161,9 +161,20 @@ def notify_appointment(appointment_data: dict) -> dict:
         err_msg = _format_grpc_error(code, details, target_display)
         logger.warning(err_msg)
 
-        # Si UNIMPLEMENTED ou UNAVAILABLE sur un hôte cloud, tenter le fallback REST
-        if code in [grpc.StatusCode.UNIMPLEMENTED, grpc.StatusCode.UNAVAILABLE] or "UNIMPLEMENTED" in str(rpc_error):
-            logger.info("Tentative de bascule de secours sur l'API REST de Consultation...")
+        # Si le serveur répond avec une erreur de protocole HTTP/REST
+        # (ex: 405 Method Not Allowed, 404 Not Found, UNIMPLEMENTED, UNAVAILABLE),
+        # c'est que le service déployé sur Render est une API REST FastAPI/Uvicorn et non un serveur gRPC natif.
+        # On bascule immédiatement et en toute transparence sur l'API REST de Consultation !
+        is_rest_server = (
+            code in [grpc.StatusCode.UNIMPLEMENTED, grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.UNKNOWN]
+            or "UNIMPLEMENTED" in str(rpc_error)
+            or "405" in str(details)
+            or "404" in str(details)
+            or "http2 header" in str(details).lower()
+        )
+
+        if is_rest_server:
+            logger.info("Détection d'un serveur REST sur l'URL Consultation -> Bascule transparente sur l'API REST (/api/rdvs)...")
             rest_res = notify_appointment_rest(appointment_data)
             if rest_res.get("statut") == "CONFIRME":
                 return rest_res
