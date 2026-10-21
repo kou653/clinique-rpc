@@ -99,3 +99,17 @@ class LabResultResponse(BaseModel):
     valeur: Optional[str] = ""
     statut: Optional[str] = ""
     message: str
+
+# -----------------------------------------------------------------------------
+# Mise à jour Dossier : Observations et Prescriptions
+# -----------------------------------------------------------------------------
+class ObservationsPayload(BaseModel):
+    observations: List[str] = Field(..., description="Liste des observations médicales", example=["Tension 12/8", "État général stable"])
+
+class PrescriptionsPayload(BaseModel):
+    prescriptions: List[str] = Field(..., description="Liste des médicaments et ordonnances", example=["Paracétamol 1g", "Vitamine C"])
+
+class DossierUpdateResponse(BaseModel):
+    ok: bool
+    id_dossier: str
+    message: str

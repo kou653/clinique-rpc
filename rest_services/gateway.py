@@ -35,6 +35,9 @@ from rest_services.schemas import (
     RadioRdvRequest,
     RadioRdvResponse,
     LabResultResponse,
+    ObservationsPayload,
+    PrescriptionsPayload,
+    DossierUpdateResponse,
 )
 
 app = FastAPI(
@@ -303,4 +306,51 @@ def book_radiologie(payload: RadioRdvRequest):
         id_dossier=grpc_response.id_dossier,
         statut=grpc_response.statut,
         message=grpc_response.message
+    )
+
+
+# =============================================================================
+# MàJ Dossier : Observations et Prescriptions (depuis Consultation ou Web)
+# =============================================================================
+@app.post(
+    "/v1/accueil/patients/{id_dossier}/observations",
+    response_model=DossierUpdateResponse,
+    tags=["Dossier Médical"]
+)
+def add_patient_observations(id_dossier: str, payload: ObservationsPayload):
+    """
+    Ajoute des observations médicales au dossier du patient dans la base de données.
+    """
+    ok = database.add_observations(id_dossier, payload.observations)
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Dossier patient '{id_dossier}' introuvable."
+        )
+    return DossierUpdateResponse(
+        ok=True,
+        id_dossier=id_dossier,
+        message=f"{len(payload.observations)} observation(s) ajoutée(s) avec succès."
+    )
+
+
+@app.post(
+    "/v1/accueil/patients/{id_dossier}/prescriptions",
+    response_model=DossierUpdateResponse,
+    tags=["Dossier Médical"]
+)
+def add_patient_prescriptions(id_dossier: str, payload: PrescriptionsPayload):
+    """
+    Ajoute des prescriptions médicales au dossier du patient dans la base de données.
+    """
+    ok = database.add_prescriptions(id_dossier, payload.prescriptions)
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Dossier patient '{id_dossier}' introuvable."
+        )
+    return DossierUpdateResponse(
+        ok=True,
+        id_dossier=id_dossier,
+        message=f"{len(payload.prescriptions)} prescription(s) ajoutée(s) avec succès."
     )
