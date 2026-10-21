@@ -90,19 +90,32 @@ def obtenir_resultat_rest(patient_id: int) -> dict:
     }
 
 
+def _format_grpc_error(code: grpc.StatusCode, details: str, target: str) -> str:
+    """Traduit les erreurs gRPC en messages clairs selon le sujet d'évaluation."""
+    if code == grpc.StatusCode.DEADLINE_EXCEEDED:
+        return f"Délai d'attente dépassé (DEADLINE_EXCEEDED) lors de l'appel au Laboratoire ({target})."
+    elif code == grpc.StatusCode.NOT_FOUND:
+        return f"Résultat ou patient non trouvé (NOT_FOUND) sur le Laboratoire ({target})."
+    elif code == grpc.StatusCode.UNAVAILABLE:
+        return f"Service Laboratoire indisponible ou hors-ligne (UNAVAILABLE sur {target})."
+    elif code == grpc.StatusCode.UNIMPLEMENTED:
+        return f"Fonction non implémentée (UNIMPLEMENTED) sur le service Laboratoire ({target})."
+    return f"Erreur gRPC Laboratoire ({code}): {details}"
+
+
 def obtenir_resultat_labo(patient_id: int) -> dict:
     """
     Interroge le Service Laboratoire :
-      1. Tente en gRPC (ObtenirResultat)
-      2. Si échec ou UNIMPLEMENTED (car le serveur de votre collègue est un service Web REST sur Render),
-         tente immédiatement son API REST (/api/resultats/{id}).
+      1. Tente en gRPC (ObtenirResultat) avec timeout strict (5.0s).
+      2. Intercepte précisément NOT_FOUND, DEADLINE_EXCEEDED, UNAVAILABLE.
+      3. Si échec ou format incompatible, bascule sur l'API REST (/api/resultats/{id}).
     """
     try:
         channel, target_display = get_channel()
         with channel:
             stub = laboratoire_pb2_grpc.LaboratoireStub(channel)
             request = laboratoire_pb2.RequeteResultat(patient_id=int(patient_id))
-            response = stub.ObtenirResultat(request, timeout=4.0)
+            response = stub.ObtenirResultat(request, timeout=5.0)
 
             logger.info(f"Résultat gRPC reçu du Laboratoire pour patient {patient_id}")
             return {
@@ -113,6 +126,23 @@ def obtenir_resultat_labo(patient_id: int) -> dict:
                 "statut": response.statut,
                 "message": f"Résultat récupéré en gRPC : {response.analyse} = {response.valeur} (Statut: {response.statut})"
             }
+    except grpc.RpcError as rpc_error:
+        code = rpc_error.code() if hasattr(rpc_error, "code") else grpc.StatusCode.UNKNOWN
+        details = rpc_error.details() if hasattr(rpc_error, "details") else str(rpc_error)
+        err_msg = _format_grpc_error(code, details, target_display)
+        logger.warning(err_msg)
+
+        # Fallback automatique vers REST
+        rest_res = obtenir_resultat_rest(patient_id)
+        if rest_res.get("ok"):
+            return rest_res
+
+        return {
+            "ok": False,
+            "patient_id": patient_id,
+            "statut": "ERREUR",
+            "message": err_msg
+        }
     except Exception as exc:
         logger.info(f"gRPC vers Laboratoire non disponible ({exc}) -> Bascule automatique sur l'API REST...")
         return obtenir_resultat_rest(patient_id)

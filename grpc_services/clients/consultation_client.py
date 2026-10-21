@@ -110,12 +110,26 @@ def notify_appointment_rest(appointment_data: dict) -> dict:
     }
 
 
+def _format_grpc_error(code: grpc.StatusCode, details: str, target: str) -> str:
+    """Traduit les erreurs gRPC en messages clairs selon le sujet d'évaluation."""
+    if code == grpc.StatusCode.DEADLINE_EXCEEDED:
+        return f"Délai d'attente dépassé (DEADLINE_EXCEEDED) lors de l'appel à Consultation ({target})."
+    elif code == grpc.StatusCode.NOT_FOUND:
+        return f"Ressource non trouvée (NOT_FOUND) sur le service Consultation ({target})."
+    elif code == grpc.StatusCode.UNAVAILABLE:
+        return f"Service Consultation indisponible ou hors-ligne (UNAVAILABLE sur {target})."
+    elif code == grpc.StatusCode.UNIMPLEMENTED:
+        return f"Fonction non implémentée (UNIMPLEMENTED) sur le service Consultation ({target})."
+    return f"Erreur gRPC Consultation ({code}): {details}"
+
+
 def notify_appointment(appointment_data: dict) -> dict:
     """
     Appelle le Service Consultation distant.
     Stratégie :
-      1. Tente gRPC en premier (PrendreRDV).
-      2. Si StatusCode.UNIMPLEMENTED (serveur web REST normal sur Render), bascule automatiquement en REST !
+      1. Tente gRPC en premier avec timeout strict (5.0s).
+      2. Intercepte précisément DEADLINE_EXCEEDED, NOT_FOUND, UNAVAILABLE, etc.
+      3. Si UNIMPLEMENTED (serveur web REST), bascule automatiquement en REST !
     """
     id_dossier = appointment_data.get("id_dossier", "")
     date_rdv = appointment_data.get("date_rdv", "")
@@ -142,19 +156,34 @@ def notify_appointment(appointment_data: dict) -> dict:
             }
 
     except grpc.RpcError as rpc_error:
-        code = rpc_error.code() if hasattr(rpc_error, "code") else None
-        
-        # Si UNIMPLEMENTED : le serveur distant est un serveur web REST et non gRPC
-        if code == grpc.StatusCode.UNIMPLEMENTED or "UNIMPLEMENTED" in str(rpc_error):
-            logger.info("gRPC retourne UNIMPLEMENTED -> Bascule automatique sur l'API REST de Consultation...")
-            return notify_appointment_rest(appointment_data)
-
+        code = rpc_error.code() if hasattr(rpc_error, "code") else grpc.StatusCode.UNKNOWN
         details = rpc_error.details() if hasattr(rpc_error, "details") else str(rpc_error)
-        logger.warning(f"Consultation distant ({target_display}) indisponible ({code}): {details}")
-        
-        # Tenter quand même en REST au cas où
-        return notify_appointment_rest(appointment_data)
+        err_msg = _format_grpc_error(code, details, target_display)
+        logger.warning(err_msg)
+
+        # Si UNIMPLEMENTED ou UNAVAILABLE sur un hôte cloud, tenter le fallback REST
+        if code in [grpc.StatusCode.UNIMPLEMENTED, grpc.StatusCode.UNAVAILABLE] or "UNIMPLEMENTED" in str(rpc_error):
+            logger.info("Tentative de bascule de secours sur l'API REST de Consultation...")
+            rest_res = notify_appointment_rest(appointment_data)
+            if rest_res.get("statut") == "CONFIRME":
+                return rest_res
+
+        return {
+            "id_rdv": "",
+            "id_dossier": id_dossier,
+            "medecin_id": medecin_id,
+            "date_rdv": date_rdv,
+            "statut": "EN_ATTENTE",
+            "message": err_msg
+        }
 
     except Exception as exc:
-        logger.error(f"Erreur gRPC vers Consultation: {exc}")
-        return notify_appointment_rest(appointment_data)
+        logger.error(f"Erreur inattendue vers Consultation: {exc}")
+        return {
+            "id_rdv": "",
+            "id_dossier": id_dossier,
+            "medecin_id": medecin_id,
+            "date_rdv": date_rdv,
+            "statut": "EN_ATTENTE",
+            "message": f"Erreur de communication avec Consultation: {exc}"
+        }

@@ -48,6 +48,19 @@ def get_channel():
     return grpc.insecure_channel(target), target
 
 
+def _format_grpc_error(code: grpc.StatusCode, details: str, target: str) -> str:
+    """Traduit les erreurs gRPC en messages clairs selon le sujet d'évaluation."""
+    if code == grpc.StatusCode.DEADLINE_EXCEEDED:
+        return f"Délai d'attente dépassé (DEADLINE_EXCEEDED) lors de l'appel à Radiologie ({target})."
+    elif code == grpc.StatusCode.NOT_FOUND:
+        return f"Examen ou patient non trouvé (NOT_FOUND) sur le service Radiologie ({target})."
+    elif code == grpc.StatusCode.UNAVAILABLE:
+        return f"Service Radiologie indisponible ou hors-ligne (UNAVAILABLE sur {target})."
+    elif code == grpc.StatusCode.UNIMPLEMENTED:
+        return f"Fonction non implémentée (UNIMPLEMENTED) sur le service Radiologie ({target})."
+    return f"Erreur gRPC Radiologie ({code}): {details}"
+
+
 def obtenir_examen_radio(patient_id: str = "", examen_id: str = "") -> dict:
     """
     Appelle directement la RPC du Service Radiologie :
@@ -75,9 +88,10 @@ def obtenir_examen_radio(patient_id: str = "", examen_id: str = "") -> dict:
             }
 
     except grpc.RpcError as rpc_error:
-        code = rpc_error.code() if hasattr(rpc_error, "code") else "UNKNOWN"
+        code = rpc_error.code() if hasattr(rpc_error, "code") else grpc.StatusCode.UNKNOWN
         details = rpc_error.details() if hasattr(rpc_error, "details") else str(rpc_error)
-        logger.warning(f"Radiologie gRPC distant indisponible ({code}): {details}")
+        err_msg = _format_grpc_error(code, details, target_display)
+        logger.warning(err_msg)
 
         # Fallback automatique vers l'API REST de Radiologie
         if RADIO_URL.startswith("http"):
@@ -113,7 +127,7 @@ def obtenir_examen_radio(patient_id: str = "", examen_id: str = "") -> dict:
         return {
             "ok": False,
             "patient_id": patient_id,
-            "message": f"Service Radiologie ({target_display}) n'a pas répondu ({code})."
+            "message": err_msg
         }
     except Exception as exc:
         logger.error(f"Erreur gRPC Radiologie: {exc}")
