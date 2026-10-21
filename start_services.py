@@ -17,6 +17,16 @@ GEN_DIR = os.path.join(ROOT_DIR, "grpc_services", "generated")
 sys.path.insert(0, ROOT_DIR)
 sys.path.insert(0, GEN_DIR)
 
+# Charger automatiquement le fichier .env si présent
+env_file = os.path.join(ROOT_DIR, ".env")
+if os.path.exists(env_file):
+    with open(env_file, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, val = line.split("=", 1)
+                os.environ[key.strip()] = val.strip()
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
