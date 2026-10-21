@@ -113,3 +113,15 @@ class DossierUpdateResponse(BaseModel):
     ok: bool
     id_dossier: str
     message: str
+
+# -----------------------------------------------------------------------------
+# Consultation des Examens de Radiologie (gRPC ObtenirExamen)
+# -----------------------------------------------------------------------------
+class RadioResultResponse(BaseModel):
+    ok: bool
+    examen_id: Optional[str] = ""
+    patient_id: Optional[str] = ""
+    type_examen: Optional[str] = ""
+    etat: Optional[str] = ""
+    resultat: Optional[str] = ""
+    message: str

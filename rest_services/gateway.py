@@ -24,7 +24,7 @@ except ImportError:
     from grpc_services.generated import accueil_pb2, accueil_pb2_grpc
 
 from grpc_services import database
-from grpc_services.clients import laboratoire_client
+from grpc_services.clients import laboratoire_client, radiologie_client
 from rest_services.schemas import (
     RegisterPatientRequest,
     PatientResponseModel,
@@ -35,6 +35,7 @@ from rest_services.schemas import (
     RadioRdvRequest,
     RadioRdvResponse,
     LabResultResponse,
+    RadioResultResponse,
     ObservationsPayload,
     PrescriptionsPayload,
     DossierUpdateResponse,
@@ -306,6 +307,27 @@ def book_radiologie(payload: RadioRdvRequest):
         id_dossier=grpc_response.id_dossier,
         statut=grpc_response.statut,
         message=grpc_response.message
+    )
+
+
+@app.get(
+    "/v1/accueil/radio/examens/{patient_id}",
+    response_model=RadioResultResponse,
+    tags=["1.4 RDV Radiologie"]
+)
+def get_radio_exam(patient_id: str, examen_id: str = ""):
+    """
+    Interroge le Service Radiologie distant en gRPC via ObtenirExamen(ObtenirExamenRequest).
+    """
+    res = radiologie_client.obtenir_examen_radio(patient_id=patient_id, examen_id=examen_id)
+    return RadioResultResponse(
+        ok=res.get("ok", False),
+        examen_id=res.get("examen_id", examen_id),
+        patient_id=res.get("patient_id", patient_id),
+        type_examen=res.get("type_examen", ""),
+        etat=res.get("etat", ""),
+        resultat=res.get("resultat", ""),
+        message=res.get("message", "")
     )
 
 
