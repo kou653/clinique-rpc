@@ -27,6 +27,7 @@ logger = logging.getLogger("RadiologieClient")
 RADIO_URL = os.getenv("RADIOLOGIE_SERVICE_URL", "").strip()
 RADIO_HOST = os.getenv("RADIOLOGIE_SERVICE_HOST", "localhost").strip()
 RADIO_PORT = os.getenv("RADIOLOGIE_SERVICE_PORT", "50053").strip()
+RADIO_API_KEY = os.getenv("RADIOLOGIE_API_KEY", "").strip()
 
 
 def get_channel():
@@ -76,11 +77,43 @@ def obtenir_examen_radio(patient_id: str = "", examen_id: str = "") -> dict:
     except grpc.RpcError as rpc_error:
         code = rpc_error.code() if hasattr(rpc_error, "code") else "UNKNOWN"
         details = rpc_error.details() if hasattr(rpc_error, "details") else str(rpc_error)
-        logger.warning(f"Radiologie distant ({RADIO_HOST}:{RADIO_PORT}) indisponible ({code}): {details}")
+        logger.warning(f"Radiologie gRPC distant indisponible ({code}): {details}")
+
+        # Fallback automatique vers l'API REST de Radiologie
+        if RADIO_URL.startswith("http"):
+            try:
+                import httpx
+                clean_base = RADIO_URL.rstrip("/")
+                headers = {}
+                if RADIO_API_KEY:
+                    headers["X-API-Key"] = RADIO_API_KEY
+                
+                # Test route patient ou route examen
+                url = f"{clean_base}/api/v1/radiologie/patients/{patient_id}/examens" if patient_id else f"{clean_base}/api/v1/radiologie/examens/{examen_id}"
+                with httpx.Client(timeout=4.0) as client:
+                    resp = client.get(url, headers=headers)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        examens = data.get("examens", [])
+                        premier_examen = examens[0] if examens else {}
+                        return {
+                            "ok": True,
+                            "examen_id": premier_examen.get("examen_id", examen_id),
+                            "type_examen": premier_examen.get("type_examen", "Radiologie standard"),
+                            "etat": premier_examen.get("etat", "TERMINE"),
+                            "resultat": premier_examen.get("resultat", ""),
+                            "patient_id": patient_id,
+                            "message": f"Examen récupéré avec succès depuis l'API REST Radiologie ({len(examens)} examen(s) trouvé(s))"
+                        }
+                    elif resp.status_code == 401:
+                        logger.warning("Radiologie REST requiert une clé API (X-API-Key).")
+            except Exception as rest_err:
+                logger.debug(f"Fallback REST Radiologie échoué: {rest_err}")
+
         return {
             "ok": False,
             "patient_id": patient_id,
-            "message": f"Service Radiologie ({RADIO_HOST}:{RADIO_PORT}) n'a pas répondu ({code})."
+            "message": f"Service Radiologie ({target_display}) n'a pas répondu ({code})."
         }
     except Exception as exc:
         logger.error(f"Erreur gRPC Radiologie: {exc}")
